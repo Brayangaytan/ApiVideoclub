@@ -18,14 +18,51 @@ namespace ApiVideoclub.Controllers
             this.dbContext = dbContext;
         }
 
-        [HttpGet]
+        [HttpGet]//api/peliculas
+        [HttpGet("listado")]//api/peliculas/listado
+        [HttpGet("/listado")]// /listado
         public async Task<ActionResult<List<Pelicula>>> Get()
         {
             return await dbContext.Peliculas.Include(x => x.videoclubs).ToListAsync();
         }
 
+        [HttpGet("primero")]//api/peliculas/primero
+        public async Task<ActionResult<Pelicula>> PrimerPelicula([FromHeader] int valor, [FromQuery] string pelicula,
+            [FromQuery] int peliculaid)
+        {
+            return await dbContext.Peliculas.FirstOrDefaultAsync();
+        }
+
+        [HttpGet("primero2")]//api/peliculas/primero2
+        public ActionResult<Pelicula> PrimerPeliculaD()
+        {
+            return new Pelicula() { Name = "DOS" };
+        }
+
+        [HttpGet("{id:int}/{param=Star Wars}")]
+        public async Task<ActionResult<Pelicula>> Get(int id, string param)
+        {
+            var pelicula = await dbContext.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
+            if(pelicula == null)
+            {
+                return NotFound();
+            }
+            return pelicula;
+        }
+
+        [HttpGet("{nombre}")]
+        public async Task<ActionResult<Pelicula>> Get([FromRoute]string nombre)
+        {
+            var pelicula = await dbContext.Peliculas.FirstOrDefaultAsync(x => x.Name.Contains(nombre));
+            if (pelicula == null)
+            {
+                return NotFound();
+            }
+            return pelicula;
+        }
+
         [HttpPost]
-        public async Task<ActionResult> Post(Pelicula pelicula)
+        public async Task<ActionResult> Post([FromBody]Pelicula pelicula)
         {
             dbContext.Add(pelicula);
             await dbContext.SaveChangesAsync();
