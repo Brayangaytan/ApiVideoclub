@@ -1,4 +1,5 @@
-﻿using ApiVideoclub.Services;
+﻿using ApiVideoclub.Middlewares;
+using ApiVideoclub.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
@@ -37,8 +38,39 @@ namespace ApiVideoclub
 
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
+
+            //app.Use(async (context, siguiente) =>
+            //{
+            //    using (var ms = new MemoryStream())
+            //    {
+            //        var bodyOriginal = context.Response.Body;
+            //        context.Response.Body = ms;
+
+            //        await siguiente.Invoke();
+
+            //        ms.Seek(0, SeekOrigin.Begin);
+            //        string response = new StreamReader(ms).ReadToEnd();
+            //        ms.Seek(0, SeekOrigin.Begin);
+
+            //        await ms.CopyToAsync(bodyOriginal);
+            //        context.Response.Body = bodyOriginal;
+
+            //        logger.LogInformation(response);
+            //    }
+            //});
+
+            app.UseResponseHttpMiddleware();
+
+            app.Map("/maping", app =>
+            {
+                app.Run(async context =>
+                {
+                    await context.Response.WriteAsync("Interceptando las peticiones");
+                });
+            });
+
             // Configure the HTTP request pipeline.
             if (env.IsDevelopment())
             {

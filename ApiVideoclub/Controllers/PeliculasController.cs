@@ -50,6 +50,9 @@ namespace ApiVideoclub.Controllers
         [HttpGet("/listado")]// /listado
         public async Task<ActionResult<List<Pelicula>>> Get()
         {
+            logger.LogInformation("Se obtiene el listado de alumnos");
+            logger.LogWarning("Mensaje de prueba warning");
+            service.ejecutarJob();
             return await dbContext.Peliculas.Include(x => x.videoclubs).ToListAsync();
         }
 
@@ -83,6 +86,7 @@ namespace ApiVideoclub.Controllers
             var pelicula = await dbContext.Peliculas.FirstOrDefaultAsync(x => x.Name.Contains(nombre));
             if (pelicula == null)
             {
+                logger.LogError("No se encuentra el alumno");
                 return NotFound();
             }
             return pelicula;
