@@ -1,4 +1,5 @@
 ﻿using ApiVideoclub.Entidades;
+using ApiVideoclub.Services;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +11,38 @@ namespace ApiVideoclub.Controllers
     [Route("peliculas")]
     public class PeliculasController : ControllerBase
     {
-
+        
         private readonly ApplicationDbContext dbContext;
+        private readonly IService service;
+        private readonly ServiceTransient serviceTransient;
+        private readonly ServiceScoped serviceScoped;
+        private readonly ServiceSingleton serviceSingleton;
+        private readonly ILogger<PeliculasController> logger;
 
-        public PeliculasController(ApplicationDbContext dbContext)
+        public PeliculasController(ApplicationDbContext dbContext, IService service, 
+            ServiceTransient serviceTransient, ServiceScoped serviceScoped,
+            ServiceSingleton serviceSingleton, ILogger<PeliculasController> logger)
         {
             this.dbContext = dbContext;
+            this.service = service;
+            this.serviceTransient = serviceTransient;
+            this.serviceScoped = serviceScoped;
+            this.serviceSingleton = serviceSingleton;
+            this.logger = logger;
+        }
+
+        [HttpGet("GUID")]
+        public ActionResult ObtenerGUID()
+        {
+            return Ok(new
+            {
+                PeliculasControllerTransient = serviceTransient.guid,
+                ServiceA_Transient = service.GetTransient(),
+                PeliculasControllerScoped = serviceScoped.guid,
+                ServiceA_Scoped = service.GetScoped(),
+                PeliculasControllerSingleton = serviceSingleton.guid,
+                ServiceA_Singleton = service.GetSingleton()
+            });
         }
 
         [HttpGet]//api/peliculas
@@ -64,6 +91,13 @@ namespace ApiVideoclub.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromBody]Pelicula pelicula)
         {
+            var existeAlumnoMismoNombre = await dbContext.Peliculas.AnyAsync(x => x.Name == pelicula.Name);
+
+            if (existeAlumnoMismoNombre)
+            {
+                return BadRequest("Ya existe un autor con el nombre");
+            }
+
             dbContext.Add(pelicula);
             await dbContext.SaveChangesAsync();
             return Ok();
