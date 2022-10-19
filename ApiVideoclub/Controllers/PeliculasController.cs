@@ -1,8 +1,11 @@
 ﻿using ApiVideoclub.Entidades;
+using ApiVideoclub.Filtros;
 using ApiVideoclub.Services;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
 namespace ApiVideoclub.Controllers
@@ -32,6 +35,8 @@ namespace ApiVideoclub.Controllers
         }
 
         [HttpGet("GUID")]
+        [ResponseCache(Duration = 10)]
+        [ServiceFilter(typeof(FiltroDeAccion))]
         public ActionResult ObtenerGUID()
         {
             return Ok(new
@@ -48,8 +53,14 @@ namespace ApiVideoclub.Controllers
         [HttpGet]//api/peliculas
         [HttpGet("listado")]//api/peliculas/listado
         [HttpGet("/listado")]// /listado
+        [ResponseCache(Duration = 15)]
+        //[Authorize]
+        //[ServiceFilter(typeof(FiltroDeAccion))]
         public async Task<ActionResult<List<Pelicula>>> Get()
         {
+            // critical, error, warning, information, debug, trace
+
+            //throw new NotImplementedException();//con esto mandamos ver tooodo el log, hay otro tipo de excepciones
             logger.LogInformation("Se obtiene el listado de alumnos");
             logger.LogWarning("Mensaje de prueba warning");
             service.ejecutarJob();
