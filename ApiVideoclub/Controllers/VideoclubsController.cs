@@ -1,4 +1,6 @@
-﻿using ApiVideoclub.Entidades;
+﻿using ApiVideoclub.DTOs;
+using ApiVideoclub.Entidades;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,32 +12,53 @@ namespace ApiVideoclub.Controllers
     public class VideoclubsController : ControllerBase
     {
         private readonly ApplicationDbContext dbContext;
+        private readonly IMapper mapper;
 
-        public VideoclubsController(ApplicationDbContext dbContext)
+        public VideoclubsController(ApplicationDbContext dbContext, IMapper mapper)
         {
             this.dbContext = dbContext;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<Videoclub>>> GetAll()
-        {
-            return await dbContext.Videoclubs.ToListAsync();
+            this.mapper = mapper;
         }
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Videoclub>> GetById(int id)
+        public async Task<ActionResult<VideoclubDTOConPeliculas>> Get(int id)
         {
-            return await dbContext.Videoclubs.FirstOrDefaultAsync(x => x.Id == id);
+            var videoclub = await dbContext.Videoclubs
+                .Include(peliculaDB=>peliculaDB.PeliculaVideoclub)
+                .ThenInclude(peliculaVideoclubDB=>peliculaVideoclubDB.Pelicula)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            //var videoclub = await dbContext.Videoclubs.Include(videoclubBD => videoclubBD.Reseñas).FirstOrDefaultAsync(x => x.Id == id);
+
+            videoclub.PeliculaVideoclub = videoclub.PeliculaVideoclub.OrderBy(x => x.Orden).ToList();
+            
+            return mapper.Map<VideoclubDTOConPeliculas>(videoclub);
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post(Videoclub videoclub)
+        public async Task<ActionResult> Post(VideoclubCreacionDTO videoclubCreacionDTO)
         {
-            var existePelicula = await dbContext.Peliculas.AnyAsync(x => x.Id == videoclub.PeliculaId);
 
-            if (!existePelicula)
+            if(videoclubCreacionDTO.PeliculasIds == null)
             {
-                return BadRequest($"No existe pelicula con el id: {videoclub.PeliculaId} ");
+                return BadRequest("No se puede abrir un videoclub sin peliculas");
+            }
+
+            var peliculasIds = await dbContext.Peliculas
+                .Where(peliculaBD => videoclubCreacionDTO.PeliculasIds.Contains(peliculaBD.Id)).Select(x => x.Id).ToListAsync();
+
+            if(videoclubCreacionDTO.PeliculasIds.Count != peliculasIds.Count)
+            {
+                return BadRequest("No existe una de las peliculas enviadas");
+            }
+
+            var videoclub= mapper.Map<Videoclub>(videoclubCreacionDTO);
+
+            if(videoclub.PeliculaVideoclub != null)
+            {
+                for (int i = 0; i < videoclub.PeliculaVideoclub.Count; i++)
+                {
+                    videoclub.PeliculaVideoclub[i].Orden = i;
+                }
             }
 
             dbContext.Add(videoclub);
@@ -43,43 +66,5 @@ namespace ApiVideoclub.Controllers
             return Ok();
         }
 
-        [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put(Videoclub videoclub, int id)
-        {
-            var exist = await dbContext.Videoclubs.AnyAsync(x => x.Id == id);
-
-            if (!exist)
-            {
-                return NotFound("La clase especifica no existe");
-            }
-
-            if (videoclub.Id != id)
-            {
-                return BadRequest("El id de la clase no coincide con el establecido en la url");
-            }
-
-            dbContext.Update(videoclub);
-            await dbContext.SaveChangesAsync();
-            return Ok();
-        }
-
-        [HttpDelete("{id:int}")]
-        public async Task<ActionResult> Delete(int id)
-        {
-            var exist = await dbContext.Videoclubs.AnyAsync(x => x.Id == id);
-            if (!exist)
-            {
-                return NotFound("El recurso no fue encontrado");
-            }
-
-            //var validateRelation = await dbContext.PeliculaVideoclub.AnyAsync
-
-            dbContext.Remove(new Videoclub
-            {
-                Id = id
-            });
-            await dbContext.SaveChangesAsync();
-            return Ok();
-        }
     }
 }

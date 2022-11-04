@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiVideoclub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220916032407_Inicial")]
-    partial class Inicial
+    [Migration("20221031014752_Reseñas")]
+    partial class Reseñas
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -32,11 +32,34 @@ namespace ApiVideoclub.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Peliculas");
+                });
+
+            modelBuilder.Entity("ApiVideoclub.Entidades.Reseña", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Contenido")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VideoclubId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoclubId");
+
+                    b.ToTable("Reseñas");
                 });
 
             modelBuilder.Entity("ApiVideoclub.Entidades.Videoclub", b =>
@@ -47,36 +70,30 @@ namespace ApiVideoclub.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("Genero")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PeliculaId")
-                        .HasColumnType("int");
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PeliculaId");
 
                     b.ToTable("Videoclubs");
                 });
 
-            modelBuilder.Entity("ApiVideoclub.Entidades.Videoclub", b =>
+            modelBuilder.Entity("ApiVideoclub.Entidades.Reseña", b =>
                 {
-                    b.HasOne("ApiVideoclub.Entidades.Pelicula", "Pelicula")
-                        .WithMany("videoclubs")
-                        .HasForeignKey("PeliculaId")
+                    b.HasOne("ApiVideoclub.Entidades.Videoclub", "Videoclub")
+                        .WithMany("Reseñas")
+                        .HasForeignKey("VideoclubId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Pelicula");
+                    b.Navigation("Videoclub");
                 });
 
-            modelBuilder.Entity("ApiVideoclub.Entidades.Pelicula", b =>
+            modelBuilder.Entity("ApiVideoclub.Entidades.Videoclub", b =>
                 {
-                    b.Navigation("videoclubs");
+                    b.Navigation("Reseñas");
                 });
 #pragma warning restore 612, 618
         }

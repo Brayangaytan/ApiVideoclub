@@ -1,6 +1,5 @@
 ﻿using ApiVideoclub.Filtros;
 using ApiVideoclub.Middlewares;
-using ApiVideoclub.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -26,17 +25,8 @@ namespace ApiVideoclub
 
             services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("defaultConnection")));
-            ///////////////////////////////////////////////////////////////////////////////////////////
-            services.AddTransient<IService, ServiceA>();
-            services.AddTransient<ServiceTransient>();
-            services.AddScoped<ServiceScoped>();
-            services.AddSingleton<ServiceSingleton>();
-            ////////////////////////////////////////////////////////////////////////////////////////////
-
-            services.AddResponseCaching();
+           
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-            services.AddTransient<FiltroDeAccion>();
-            services.AddHostedService<EscribirArchivo>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
@@ -45,6 +35,7 @@ namespace ApiVideoclub
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ApiVideoclub", Version = "v1" });
             });
 
+            services.AddAutoMapper(typeof(Startup));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
@@ -72,13 +63,7 @@ namespace ApiVideoclub
 
             app.UseResponseHttpMiddleware();
 
-            app.Map("/maping", app =>
-            {
-                app.Run(async context =>
-                {
-                    await context.Response.WriteAsync("Interceptando las peticiones");
-                });
-            });
+           
 
             // Configure the HTTP request pipeline.
             if (env.IsDevelopment())
@@ -90,8 +75,6 @@ namespace ApiVideoclub
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
-            app.UseResponseCaching();
 
             app.UseAuthorization();
 

@@ -14,7 +14,7 @@ namespace ApiVideoclub.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Name = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -27,34 +27,21 @@ namespace ApiVideoclub.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Genero = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PeliculaId = table.Column<int>(type: "int", nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Videoclubs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Videoclubs_Peliculas_PeliculaId",
-                        column: x => x.PeliculaId,
-                        principalTable: "Peliculas",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Videoclubs_PeliculaId",
-                table: "Videoclubs",
-                column: "PeliculaId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Videoclubs");
+                name: "Peliculas");
 
             migrationBuilder.DropTable(
-                name: "Peliculas");
+                name: "Videoclubs");
         }
     }
 }

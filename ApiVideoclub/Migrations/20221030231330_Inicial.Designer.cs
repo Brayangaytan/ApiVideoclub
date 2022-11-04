@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiVideoclub.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220916032426_Videoclubs")]
-    partial class Videoclubs
+    [Migration("20221030231330_Inicial")]
+    partial class Inicial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -32,7 +32,9 @@ namespace ApiVideoclub.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
 
                     b.HasKey("Id");
 
@@ -47,36 +49,13 @@ namespace ApiVideoclub.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("Genero")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PeliculaId")
-                        .HasColumnType("int");
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PeliculaId");
-
                     b.ToTable("Videoclubs");
-                });
-
-            modelBuilder.Entity("ApiVideoclub.Entidades.Videoclub", b =>
-                {
-                    b.HasOne("ApiVideoclub.Entidades.Pelicula", "Pelicula")
-                        .WithMany("videoclubs")
-                        .HasForeignKey("PeliculaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Pelicula");
-                });
-
-            modelBuilder.Entity("ApiVideoclub.Entidades.Pelicula", b =>
-                {
-                    b.Navigation("videoclubs");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,6 +1,7 @@
-﻿using ApiVideoclub.Entidades;
+﻿using ApiVideoclub.DTOs;
+using ApiVideoclub.Entidades;
 using ApiVideoclub.Filtros;
-using ApiVideoclub.Services;
+using AutoMapper;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,102 +17,56 @@ namespace ApiVideoclub.Controllers
     {
         
         private readonly ApplicationDbContext dbContext;
-        private readonly IService service;
-        private readonly ServiceTransient serviceTransient;
-        private readonly ServiceScoped serviceScoped;
-        private readonly ServiceSingleton serviceSingleton;
-        private readonly ILogger<PeliculasController> logger;
+        private readonly IMapper mapper;
 
-        public PeliculasController(ApplicationDbContext dbContext, IService service, 
-            ServiceTransient serviceTransient, ServiceScoped serviceScoped,
-            ServiceSingleton serviceSingleton, ILogger<PeliculasController> logger)
+        public PeliculasController(ApplicationDbContext dbContext, IMapper mapper)
         {
             this.dbContext = dbContext;
-            this.service = service;
-            this.serviceTransient = serviceTransient;
-            this.serviceScoped = serviceScoped;
-            this.serviceSingleton = serviceSingleton;
-            this.logger = logger;
-        }
-
-        [HttpGet("GUID")]
-        [ResponseCache(Duration = 10)]
-        [ServiceFilter(typeof(FiltroDeAccion))]
-        public ActionResult ObtenerGUID()
-        {
-            return Ok(new
-            {
-                PeliculasControllerTransient = serviceTransient.guid,
-                ServiceA_Transient = service.GetTransient(),
-                PeliculasControllerScoped = serviceScoped.guid,
-                ServiceA_Scoped = service.GetScoped(),
-                PeliculasControllerSingleton = serviceSingleton.guid,
-                ServiceA_Singleton = service.GetSingleton()
-            });
+            this.mapper = mapper;
         }
 
         [HttpGet]//api/peliculas
-        [HttpGet("listado")]//api/peliculas/listado
-        [HttpGet("/listado")]// /listado
-        [ResponseCache(Duration = 15)]
-        //[Authorize]
-        //[ServiceFilter(typeof(FiltroDeAccion))]
-        public async Task<ActionResult<List<Pelicula>>> Get()
+        public async Task<ActionResult<List<PeliculaDTO>>> Get()
         {
-            // critical, error, warning, information, debug, trace
-
-            //throw new NotImplementedException();//con esto mandamos ver tooodo el log, hay otro tipo de excepciones
-            logger.LogInformation("Se obtiene el listado de alumnos");
-            logger.LogWarning("Mensaje de prueba warning");
-            service.ejecutarJob();
-            return await dbContext.Peliculas.Include(x => x.videoclubs).ToListAsync();
+            var peliculas = await dbContext.Peliculas.ToListAsync();
+            return mapper.Map<List<PeliculaDTO>>(peliculas);
         }
 
-        [HttpGet("primero")]//api/peliculas/primero
-        public async Task<ActionResult<Pelicula>> PrimerPelicula([FromHeader] int valor, [FromQuery] string pelicula,
-            [FromQuery] int peliculaid)
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<PeliculaDTOConVideoclubs>> Get(int id)
         {
-            return await dbContext.Peliculas.FirstOrDefaultAsync();
-        }
+            var pelicula = await dbContext.Peliculas
+                .Include(peliculaDB=>peliculaDB.PeliculaVideoclub)
+                .ThenInclude(peliculaVideoclubDB=>peliculaVideoclubDB.Videoclub)
+                .FirstOrDefaultAsync(peliculaBD => peliculaBD.Id == id);
 
-        [HttpGet("primero2")]//api/peliculas/primero2
-        public ActionResult<Pelicula> PrimerPeliculaD()
-        {
-            return new Pelicula() { Name = "DOS" };
-        }
-
-        [HttpGet("{id:int}/{param=Star Wars}")]
-        public async Task<ActionResult<Pelicula>> Get(int id, string param)
-        {
-            var pelicula = await dbContext.Peliculas.FirstOrDefaultAsync(x => x.Id == id);
             if(pelicula == null)
             {
                 return NotFound();
             }
-            return pelicula;
+
+            return mapper.Map<PeliculaDTOConVideoclubs>(pelicula);
         }
 
         [HttpGet("{nombre}")]
-        public async Task<ActionResult<Pelicula>> Get([FromRoute]string nombre)
+        public async Task<ActionResult<List<PeliculaDTO>>> Get([FromRoute]string nombre)
         {
-            var pelicula = await dbContext.Peliculas.FirstOrDefaultAsync(x => x.Name.Contains(nombre));
-            if (pelicula == null)
-            {
-                logger.LogError("No se encuentra el alumno");
-                return NotFound();
-            }
-            return pelicula;
+            var peliculas = await dbContext.Peliculas.Where(peliculaBD => peliculaBD.Name.Contains(nombre)).ToListAsync();
+           
+            return mapper.Map<List<PeliculaDTO>>(peliculas);
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post([FromBody]Pelicula pelicula)
+        public async Task<ActionResult> Post([FromBody] PeliculaCreacionDTO peliculaCreacionDTO)
         {
-            var existeAlumnoMismoNombre = await dbContext.Peliculas.AnyAsync(x => x.Name == pelicula.Name);
+            var existePeliculaMismoNombre = await dbContext.Peliculas.AnyAsync(x => x.Name == peliculaCreacionDTO.Name);
 
-            if (existeAlumnoMismoNombre)
+            if (existePeliculaMismoNombre)
             {
-                return BadRequest("Ya existe un autor con el nombre");
+                return BadRequest("Ya existe una pelicula con el nombre");
             }
+
+            var pelicula = mapper.Map<Pelicula>(peliculaCreacionDTO);
 
             dbContext.Add(pelicula);
             await dbContext.SaveChangesAsync();
@@ -123,7 +78,7 @@ namespace ApiVideoclub.Controllers
         {
             if(pelicula.Id != id)
             {
-                return BadRequest("El id del alumno no coincide con el establecido url.");
+                return BadRequest("El id de la pelicula no coincide con el establecido url.");
             }
 
             dbContext.Update(pelicula);
