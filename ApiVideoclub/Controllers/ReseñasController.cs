@@ -1,6 +1,9 @@
 ﻿using ApiVideoclub.DTOs;
 using ApiVideoclub.Entidades;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +15,14 @@ namespace ApiVideoclub.Controllers
     {
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
-        public ReseñasController(ApplicationDbContext context, IMapper mapper)
+        private readonly UserManager<IdentityUser> userManager;
+
+        public ReseñasController(ApplicationDbContext context, IMapper mapper,
+            UserManager<IdentityUser> userManager)
         {
             this.context = context;
             this.mapper = mapper;
+            this.userManager = userManager;
         }
 
         [HttpGet]
@@ -35,8 +42,13 @@ namespace ApiVideoclub.Controllers
         }
 
         [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult> Post(int videoclubId, ReseñaCreacionDTO reseñaCreacionDTO)
         {
+            var emailClaim = HttpContext.User.Claims.Where(claim => claim.Type == "email").FirstOrDefault();
+            var email = emailClaim.Value;
+            var usuario = await userManager.FindByEmailAsync(email);
+            var usuarioId = usuario.Id;
             var existeVideoclub = await context.Videoclubs.AnyAsync(videoclubDB => videoclubDB.Id == videoclubId);
 
             if (!existeVideoclub)
@@ -46,6 +58,7 @@ namespace ApiVideoclub.Controllers
 
             var reseña = mapper.Map<Reseña>(reseñaCreacionDTO);
             reseña.VideoclubId = videoclubId;
+            reseña.UsuarioId = usuarioId;
             context.Add(reseña);
             await context.SaveChangesAsync();
             return Ok();

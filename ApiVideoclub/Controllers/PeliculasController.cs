@@ -2,6 +2,8 @@
 using ApiVideoclub.Entidades;
 using ApiVideoclub.Filtros;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +15,7 @@ namespace ApiVideoclub.Controllers
 {
     [ApiController]
     [Route("peliculas")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "EsAdmin")]
     public class PeliculasController : ControllerBase
     {
         
@@ -26,6 +29,7 @@ namespace ApiVideoclub.Controllers
         }
 
         [HttpGet]//api/peliculas
+        [AllowAnonymous]
         public async Task<ActionResult<List<PeliculaDTO>>> Get()
         {
             var peliculas = await dbContext.Peliculas.ToListAsync();
